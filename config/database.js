@@ -3,9 +3,8 @@ const logger = require('./logger');
 
 const connectDB = async () => {
   try {
+    // Only keep options that still exist in Mongoose 6+/Driver 4+
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
@@ -13,7 +12,7 @@ const connectDB = async () => {
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
     logger.info(`Database: ${conn.connection.name}`);
 
-    // Handle connection events
+    // Connection event handlers
     mongoose.connection.on('error', (err) => {
       logger.error('MongoDB connection error:', err);
     });
