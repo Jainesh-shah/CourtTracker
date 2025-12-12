@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const socket = io("ws://localhost:3000", {
+    transports: ["websocket"]
+  });
+
+  socket.on("connect", () => {
+    console.log("Connected:", socket.id);
+    socket.emit("subscribe", { deviceId: "test123" });
+  });
+
+  socket.on("subscribed", msg => console.log("SUBSCRIBED:", msg));
+  socket.on("watchlist_update", msg => console.log("WATCHLIST:", msg));
+</script>
+</body>
+</html>
