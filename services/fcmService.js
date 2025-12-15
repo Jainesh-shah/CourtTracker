@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const logger = require('../config/logger');
 const { NotificationLog } = require('../models');
+const path = require('path');
 
 // Initialize Firebase Admin
 let firebaseApp;
