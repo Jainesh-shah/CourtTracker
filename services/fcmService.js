@@ -9,8 +9,12 @@ let firebaseApp;
 const initializeFirebase = () => {
   try {
     if (!firebaseApp) {
+      logger.info('Attempting to initialize Firebase...');
+      
       // Option 1: Using service account file
       if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+        logger.info(`Using service account path: ${process.env.FIREBASE_SERVICE_ACCOUNT_PATH}`);
+        
         let serviceAccountPath;
         
         // Check if it's an absolute path (production) or relative (local)
@@ -20,29 +24,67 @@ const initializeFirebase = () => {
           serviceAccountPath = path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
         }
         
-        const serviceAccount = require(serviceAccountPath);
-        firebaseApp = admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount)
-        });
+        logger.info(`Resolved service account path: ${serviceAccountPath}`);
+        
+        // Check if file exists
+        if (fs.existsSync(serviceAccountPath)) {
+          logger.info('Service account file exists');
+          
+          // Read and parse the file to validate
+          const fileContent = fs.readFileSync(serviceAccountPath, 'utf8');
+          const serviceAccount = JSON.parse(fileContent);
+          
+          logger.info(`Project ID from file: ${serviceAccount.project_id}`);
+          logger.info(`Client email from file: ${serviceAccount.client_email}`);
+          logger.info(`Private key length: ${serviceAccount.private_key?.length}`);
+          
+          firebaseApp = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+          });
+          
+          logger.info('✅ Firebase initialized with service account file');
+        } else {
+          logger.error(`❌ Service account file not found at: ${serviceAccountPath}`);
+          return null;
+        }
       } 
       // Option 2: Using environment variables
       else if (process.env.FIREBASE_PROJECT_ID) {
+        logger.info('Using Firebase environment variables');
+        
+        if (!process.env.FIREBASE_PRIVATE_KEY || !process.env.FIREBASE_CLIENT_EMAIL) {
+          throw new Error('Missing required Firebase environment variables');
+        }
+        
+        // Fix newline characters
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+        
+        logger.info(`Project ID: ${process.env.FIREBASE_PROJECT_ID}`);
+        logger.info(`Client email: ${process.env.FIREBASE_CLIENT_EMAIL}`);
+        logger.info(`Private key length after fixing newlines: ${privateKey.length}`);
+        logger.info(`Private key starts with: ${privateKey.substring(0, 30)}`);
+        
         firebaseApp = admin.initializeApp({
           credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            privateKey: privateKey,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL
           })
         });
+        
+        logger.info('✅ Firebase initialized with environment variables');
       } else {
-        logger.warn('Firebase not configured. Push notifications will not work.');
+        logger.warn('⚠️ Firebase not configured. Push notifications will not work.');
+        logger.warn('Set either FIREBASE_SERVICE_ACCOUNT_PATH or (FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL)');
         return null;
       }
+      
       logger.info('Firebase Admin initialized successfully');
     }
     return firebaseApp;
   } catch (error) {
-    logger.error('Error initializing Firebase:', error);
+    logger.error('❌ Error initializing Firebase:', error.message);
+    logger.error('Stack trace:', error.stack);
     return null;
   }
 };
