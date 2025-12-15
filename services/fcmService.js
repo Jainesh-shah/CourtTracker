@@ -10,7 +10,16 @@ const initializeFirebase = () => {
     if (!firebaseApp) {
       // Option 1: Using service account file
       if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-        const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+        let serviceAccountPath;
+        
+        // Check if it's an absolute path (production) or relative (local)
+        if (path.isAbsolute(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
+          serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+        } else {
+          serviceAccountPath = path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+        }
+        
+        const serviceAccount = require(serviceAccountPath);
         firebaseApp = admin.initializeApp({
           credential: admin.credential.cert(serviceAccount)
         });
