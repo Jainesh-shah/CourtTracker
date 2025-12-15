@@ -491,7 +491,7 @@ router.get('/analytics/overview', async (req, res) => {
   }
 });
 
-router.get('/api/debug/firebase', (req, res) => {
+router.get('/debug/firebase', (req, res) => {
   res.json({
     hasServiceAccountPath: !!process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
     hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
@@ -500,6 +500,45 @@ router.get('/api/debug/firebase', (req, res) => {
     privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length,
     privateKeyPreview: process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50) + '...'
   });
+});
+
+router.post('/debug/test-notification', async (req, res) => {
+  try {
+    const { deviceId, fcmToken } = req.body;
+    
+    if (!fcmToken) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'fcmToken is required' 
+      });
+    }
+
+    const result = await sendNotification(
+      fcmToken,
+      { 
+        title: '🧪 Test Notification', 
+        body: 'This is a test from your Court Tracker API' 
+      },
+      { test: 'true', timestamp: new Date().toISOString() }
+    );
+
+    res.json({ 
+      success: true,
+      result,
+      firebaseConfig: {
+        hasServiceAccountPath: !!process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
 });
 
 // Health check
