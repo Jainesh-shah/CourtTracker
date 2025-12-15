@@ -11,6 +11,8 @@ const {
 const { scrapeCourtData } = require('../services/scraperService');
 const { calculateEstimatedWaitTime } = require('../services/trackingService');
 const logger = require('../config/logger');
+const { sendNotification } = require('../services/fcmService');
+
 
 // ==================== Device Management ====================
 
